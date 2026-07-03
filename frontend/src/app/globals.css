@@ -3,32 +3,32 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --primary: #0284c7;
-  --primary-hover: #0369a1;
-  --secondary: #64748b;
-  --accent: #0d9488;
-  --card-bg: rgba(255, 255, 255, 0.8);
-  --border: rgba(226, 232, 240, 0.8);
-  --sidebar-bg: #0f172a;
-  --sidebar-fg: #f8fafc;
+  --background: #2b003d; /* Dark purple background */
+  --foreground: #ffffff; /* White text */
+  --primary: #8b5cf6;
+  --primary-hover: #7c3aed;
+  --secondary: #701a75;
+  --accent: #d946ef;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --border: rgba(233, 213, 252, 0.8);
+  --sidebar-bg: #faf5ff;
+  --sidebar-fg: #6b21a8;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }
 
 .dark {
-  --background: #020617; /* Very dark blue, almost black */
-  --foreground: #f8fafc;
-  --primary: #38bdf8;
-  --primary-hover: #0ea5e9;
-  --secondary: #94a3b8;
-  --accent: #2dd4bf;
-  --card-bg: rgba(15, 23, 42, 0.6);
-  --border: rgba(51, 65, 85, 0.4);
-  --sidebar-bg: #020617;
-  --sidebar-fg: #f8fafc;
+  --background: #fdfdfd; /* Light White background */
+  --foreground: #6b21a8; /* Deep Purple text */
+  --primary: #8b5cf6;
+  --primary-hover: #7c3aed;
+  --secondary: #701a75;
+  --accent: #d946ef;
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --border: rgba(216, 180, 254, 0.4);
+  --sidebar-bg: #faf5ff;
+  --sidebar-fg: #6b21a8;
 }
 
 body {
@@ -132,7 +132,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .bg-animated-gradient {
-  background: linear-gradient(-45deg, #020617, #0f172a, #1e1b4b, #020617);
+  background: linear-gradient(-45deg, #fdfdfd, #f5f3ff, #fae8ff, #fdfdfd);
   background-size: 400% 400%;
   animation: gradientBG 15s ease infinite;
 }

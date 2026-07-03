@@ -4,6 +4,7 @@
 import React from "react";
 import { AuthProvider } from "../context/AuthContext";
 import { ProjectProvider } from "../context/ProjectContext";
+import NavBar from "../components/NavBar";
 import "./globals.css";
 
 export default function RootLayout({
