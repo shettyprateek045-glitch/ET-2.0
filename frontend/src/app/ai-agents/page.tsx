@@ -91,12 +91,8 @@ export default function AIAgentsPage() {
       ? `${agent.endpoint}${encodeURIComponent(inputVal)}` 
       : agent.endpoint;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 600);
-
     try {
-      const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeoutId);
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setResult(agent.id === 0 ? data.results : (agent.id === 1 ? data : (agent.id === 2 ? data.risks : (agent.id === 3 ? data.alerts : data))));

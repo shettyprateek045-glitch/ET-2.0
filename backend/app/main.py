@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base, SessionLocal
-from app.models.models import User, Project, RFI, QualityIssue, PurchaseOrder, CommissioningItem, DocumentMetadata
-from app.routers import auth, projects, documents, procurement, quality, commissioning, ai, reports
+from app.models.models import User, Project, RFI, QualityIssue, PurchaseOrder, CommissioningItem, DocumentMetadata, Notification
+from app.routers import auth, projects, documents, procurement, quality, commissioning, ai, reports, rfis
 from datetime import datetime, timedelta
 import hashlib
 
@@ -34,6 +34,8 @@ app.include_router(quality.router, prefix=settings.API_V1_STR)
 app.include_router(commissioning.router, prefix=settings.API_V1_STR)
 app.include_router(ai.router, prefix=settings.API_V1_STR)
 app.include_router(reports.router, prefix=settings.API_V1_STR)
+app.include_router(rfis.router, prefix=settings.API_V1_STR)
+
 
 # Seed Database
 def seed_database():

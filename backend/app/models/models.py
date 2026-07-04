@@ -124,3 +124,14 @@ class ChatLog(Base):
     response = Column(Text, nullable=False)
     sources = Column(Text, nullable=True) # JSON or Comma-separated citations
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    message = Column(Text, nullable=False)
+    type = Column(String, default="info") # info, delay, quality
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+

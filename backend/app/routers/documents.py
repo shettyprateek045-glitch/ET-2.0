@@ -106,3 +106,12 @@ def search_documents(query: str, db: Session = Depends(get_db)):
         "answer": rag_result["answer"],
         "sources": rag_result["sources"]
     }
+
+@router.get("/{doc_id}/summary")
+def get_document_summary(doc_id: int, db: Session = Depends(get_db)):
+    doc = db.query(DocumentMetadata).filter(DocumentMetadata.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    summary = AIService.generate_document_summary(doc.filename, doc.ocr_text)
+    return {"id": doc_id, "filename": doc.filename, "summary": summary}
+
