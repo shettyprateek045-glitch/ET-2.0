@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, X, Send, Paperclip, Mic, Minimize2, Maximize2, Loader2, Sparkles } from 'lucide-react';
+import { Bot, X, Send, Paperclip, Mic, Minimize2, Maximize2, Loader2, Sparkles, FileText } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Message {
@@ -15,6 +16,7 @@ interface Message {
 
 export default function AIChatbot() {
   const pathname = usePathname();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [input, setInput] = useState('');
@@ -34,6 +36,12 @@ export default function AIChatbot() {
   if (pathname === '/' || pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password') {
     return null;
   }
+
+  useEffect(() => {
+    const handleOpenChat = () => setIsOpen(true);
+    window.addEventListener('open-support-chat', handleOpenChat);
+    return () => window.removeEventListener('open-support-chat', handleOpenChat);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -101,6 +109,52 @@ export default function AIChatbot() {
     setIsLoading(false);
   };
 
+  const handleFileTicket = () => {
+    if (!input.trim()) return;
+    
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input,
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, userMsg]);
+    const ticketContent = input;
+    setInput('');
+    setIsLoading(true);
+
+    setTimeout(() => {
+      try {
+        const saved = localStorage.getItem('epc_submitted_tickets');
+        const tickets = saved ? JSON.parse(saved) : [];
+        const newTicket = {
+          name: user ? user.full_name : 'Chatbot User',
+          email: user ? user.email : 'chatbot@datacentre.ai',
+          company: 'Filed via Support Chatbot',
+          department: 'Technical Support',
+          message: ticketContent,
+          date: new Date().toISOString()
+        };
+        const updated = [newTicket, ...tickets];
+        localStorage.setItem('epc_submitted_tickets', JSON.stringify(updated));
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new Event('ticket-submitted'));
+      } catch (e) {
+        console.error(e);
+      }
+
+      const aiMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'Your support ticket has been successfully created and saved! You can view this enquiry under "Submitted Support Tickets" at the bottom of the Contact page.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiMsg]);
+      setIsLoading(false);
+    }, 1000);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -118,9 +172,9 @@ export default function AIChatbot() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-primary to-accent rounded-full shadow-lg flex items-center justify-center text-white hover:shadow-primary/50 transition-shadow z-50 group"
+            className="fixed bottom-6 right-6 w-14 h-14 bg-purple-700 hover:bg-purple-800 rounded-full shadow-lg flex items-center justify-center text-white hover:shadow-purple-700/50 transition-all z-50 group"
           >
-            <div className="absolute inset-0 rounded-full pulse-glow-cyan"></div>
+            <div className="absolute inset-0 rounded-full bg-purple-500/20 animate-pulse"></div>
             <Bot className="w-6 h-6 relative z-10 group-hover:scale-110 transition-transform" />
           </motion.button>
         )}
@@ -134,19 +188,19 @@ export default function AIChatbot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className={`fixed bottom-6 right-6 z-50 glass shadow-2xl rounded-2xl overflow-hidden flex flex-col transition-all duration-300 ${
+            className={`fixed bottom-6 right-6 z-50 glass shadow-2xl rounded-2xl overflow-hidden flex flex-col transition-all duration-300 border border-purple-200 ${
               isExpanded ? 'w-[800px] h-[80vh] right-1/2 translate-x-1/2 bottom-1/2 translate-y-1/2' : 'w-[380px] h-[600px]'
             }`}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-sidebar-bg to-primary/80 text-white px-4 py-3 flex items-center justify-between border-b border-white/10">
+            <div className="bg-purple-900 text-white px-4 py-3 flex items-center justify-between border-b border-purple-850">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-cyan-300" />
+                  <Sparkles className="w-4 h-4 text-pink-300" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm">EPC Intelligence Copilot</h3>
-                  <p className="text-[10px] text-cyan-100 flex items-center gap-1">
+                  <p className="text-[10px] text-purple-200 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span> Online
                   </p>
                 </div>
@@ -175,19 +229,19 @@ export default function AIChatbot() {
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-background/50">
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] rounded-2xl p-3 ${
+                  <div className={`max-w-[80%] rounded-2xl p-3 shadow-sm ${
                     msg.role === 'user' 
-                      ? 'bg-primary text-white rounded-tr-sm' 
-                      : 'bg-card-bg border border-border shadow-sm rounded-tl-sm text-foreground'
+                      ? 'bg-purple-700 text-white rounded-tr-sm' 
+                      : 'bg-purple-50 border border-purple-100 text-purple-950 rounded-tl-sm'
                   }`}>
                     <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                     
                     {msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-3 pt-2 border-t border-border/50">
-                        <p className="text-[10px] font-semibold text-secondary uppercase mb-1">Sources Cited:</p>
+                      <div className="mt-3 pt-2 border-t border-purple-200/30">
+                        <p className="text-[10px] font-semibold text-purple-700 uppercase mb-1">Sources Cited:</p>
                         <div className="flex flex-wrap gap-1">
                           {msg.sources.map((src, i) => (
-                            <span key={i} className="text-[10px] px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-full">
+                            <span key={i} className="text-[10px] px-2 py-0.5 bg-purple-100 text-purple-800 border border-purple-200/50 rounded-full">
                               {src}
                             </span>
                           ))}
@@ -202,8 +256,8 @@ export default function AIChatbot() {
               ))}
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-card-bg border border-border shadow-sm rounded-2xl rounded-tl-sm p-4 flex items-center gap-2 text-secondary">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  <div className="bg-purple-50 border border-purple-100 shadow-sm rounded-2xl rounded-tl-sm p-4 flex items-center gap-2 text-purple-800">
+                    <Loader2 className="w-4 h-4 animate-spin text-purple-700" />
                     <span className="text-xs font-medium">Analyzing intelligence vectors...</span>
                   </div>
                 </div>
@@ -212,26 +266,35 @@ export default function AIChatbot() {
             </div>
 
             {/* Input Area */}
-            <div className="p-3 bg-card-bg border-t border-border">
-              <div className="relative flex items-center bg-background border border-border rounded-xl focus-within:border-primary focus-within:ring-1 focus-within:ring-primary shadow-inner">
-                <button className="p-2 text-secondary hover:text-primary transition-colors ml-1">
+            <div className="p-3 bg-card-bg border-t border-purple-100">
+              <div className="relative flex items-center bg-background border border-purple-200 rounded-xl focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 shadow-inner">
+                <button className="p-2 text-purple-400 hover:text-purple-600 transition-colors ml-1">
                   <Paperclip className="w-4 h-4" />
                 </button>
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask about specs, delays, or RFIs..."
-                  className="flex-1 bg-transparent py-2.5 px-2 text-sm focus:outline-none resize-none max-h-32 min-h-[44px]"
+                  placeholder="Ask a question or submit as ticket..."
+                  className="flex-1 bg-transparent py-2.5 px-2 text-sm text-purple-950 focus:outline-none resize-none max-h-32 min-h-[44px]"
                   rows={1}
                 />
-                <button className="p-2 text-secondary hover:text-primary transition-colors">
+                <button className="p-2 text-purple-400 hover:text-purple-600 transition-colors">
                   <Mic className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={handleFileTicket}
+                  disabled={!input.trim() || isLoading}
+                  title="Submit Inquiry as Support Ticket"
+                  className="p-2 text-white bg-pink-600 rounded-lg hover:bg-pink-700 disabled:opacity-50 disabled:bg-secondary transition-colors"
+                >
+                  <FileText className="w-4 h-4" />
                 </button>
                 <button 
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
-                  className="p-2 mr-1 text-white bg-primary rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:bg-secondary transition-colors"
+                  title="Send Message to Chat"
+                  className="p-2 mx-1 text-white bg-purple-750 rounded-lg hover:bg-purple-850 disabled:opacity-50 disabled:bg-secondary transition-colors"
                 >
                   <Send className="w-4 h-4" />
                 </button>

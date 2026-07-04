@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bot, Shield, Clock, Cpu, Activity, FileText, Play, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -9,6 +9,19 @@ export default function AIAgentsPage() {
   const [inputVal, setInputVal] = useState('');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam !== null) {
+        const parsed = parseInt(tabParam);
+        if (!isNaN(parsed) && parsed >= 0 && parsed <= 4) {
+          setActiveTab(parsed);
+        }
+      }
+    }
+  }, []);
 
   const AGENTS = [
     {
@@ -78,8 +91,12 @@ export default function AIAgentsPage() {
       ? `${agent.endpoint}${encodeURIComponent(inputVal)}` 
       : agent.endpoint;
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 600);
+
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         setResult(agent.id === 0 ? data.results : (agent.id === 1 ? data : (agent.id === 2 ? data.risks : (agent.id === 3 ? data.alerts : data))));
@@ -87,14 +104,10 @@ export default function AIAgentsPage() {
         throw new Error();
       }
     } catch (e) {
-      // Mock Fallback
-      setTimeout(() => {
-        setResult(agent.fallbackData);
-        setLoading(false);
-      }, 1000);
-      return;
+      setResult(agent.fallbackData);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

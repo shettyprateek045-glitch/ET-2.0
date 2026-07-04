@@ -64,11 +64,52 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const loadTickets = () => {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('epc_submitted_tickets');
+        if (saved) {
+          try {
+            setTickets(JSON.parse(saved));
+          } catch (e) {
+            console.error("Error parsing saved tickets", e);
+          }
+        }
+      }
+    };
+    
+    loadTickets();
+    window.addEventListener('storage', loadTickets);
+    window.addEventListener('ticket-submitted', loadTickets);
+    
+    return () => {
+      window.removeEventListener('storage', loadTickets);
+      window.removeEventListener('ticket-submitted', loadTickets);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (submitted && containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [submitted]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 1500)); // Simulated submission
+    await new Promise(r => setTimeout(r, 1000)); // Simulated submission
+    
+    const newTicket = {
+      ...formState,
+      date: new Date().toISOString()
+    };
+    const updatedTickets = [newTicket, ...tickets];
+    setTickets(updatedTickets);
+    localStorage.setItem('epc_submitted_tickets', JSON.stringify(updatedTickets));
+    
     setSubmitting(false);
     setSubmitted(true);
   };
@@ -95,17 +136,19 @@ export default function ContactPage() {
       </motion.div>
 
       {/* Quick Contact Methods */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {[
           { icon: Mail, label: 'Email Us', value: 'hello@datacentre.ai', desc: 'We reply within 4 hours', color: 'text-sky-400 bg-sky-500/10' },
           { icon: Phone, label: 'Call Sales', value: '+1 800 DC-AI-EPC', desc: 'Mon–Fri, 9am–6pm PST', color: 'text-teal-400 bg-teal-500/10' },
-          { icon: Clock, label: 'Book a Demo', value: 'Schedule a call', desc: 'Live platform walkthrough', color: 'text-purple-400 bg-purple-500/10' },
+          { icon: MessageSquare, label: 'AI Support Chat', value: 'Chat with Copilot', desc: 'Instant response 24/7', color: 'text-purple-400 bg-purple-500/10', action: () => { window.dispatchEvent(new CustomEvent('open-support-chat')) } },
+          { icon: Clock, label: 'Book a Demo', value: 'Schedule a call', desc: 'Live platform walkthrough', color: 'text-pink-400 bg-pink-500/10' },
         ].map((item, idx) => (
           <motion.div
             key={idx}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
+            onClick={item.action}
             className="glass rounded-2xl border border-border p-6 text-center hover:border-primary/30 transition-all hover:-translate-y-1 cursor-pointer group"
           >
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 ${item.color} group-hover:scale-110 transition-transform`}>
@@ -121,6 +164,7 @@ export default function ContactPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Contact Form */}
         <motion.div
+          ref={containerRef}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -322,6 +366,37 @@ export default function ContactPage() {
           </motion.div>
         </div>
       </div>
+
+      {/* Submitted Tickets Log */}
+      {tickets.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-2xl border border-border p-6 mt-12 space-y-6"
+        >
+          <h3 className="text-xl font-bold flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-primary" /> Submitted Support Tickets ({tickets.length})
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {tickets.map((t, idx) => (
+              <div key={idx} className="p-4 bg-white/5 border border-border/60 rounded-xl space-y-2.5">
+                <div className="flex justify-between items-center text-xs border-b border-border/20 pb-2">
+                  <span className="font-semibold text-primary">{t.department}</span>
+                  <span className="text-secondary">{new Date(t.date).toLocaleString()}</span>
+                </div>
+                <div className="text-xs space-y-1">
+                  <p className="font-bold text-sm">{t.name}</p>
+                  <p className="text-secondary">Email: {t.email}</p>
+                  {t.company && <p className="text-secondary">Company: {t.company}</p>}
+                </div>
+                <p className="text-xs text-secondary bg-white/3 p-2.5 rounded-lg border border-border/40 whitespace-pre-wrap leading-relaxed">
+                  {t.message}
+                </p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }
