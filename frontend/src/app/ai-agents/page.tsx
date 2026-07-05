@@ -9,6 +9,24 @@ export default function AIAgentsPage() {
   const [inputVal, setInputVal] = useState('');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'report' | 'logs'>('report');
+  const [logs, setLogs] = useState<any[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+
+  const fetchLogs = async (tabId: number) => {
+    setLogsLoading(true);
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/v1/agents/${tabId}/logs`);
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch logs", e);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -103,6 +121,7 @@ export default function AIAgentsPage() {
       setResult(agent.fallbackData);
     } finally {
       setLoading(false);
+      fetchLogs(activeTab);
     }
   };
 
@@ -126,6 +145,8 @@ export default function AIAgentsPage() {
                 setActiveTab(a.id);
                 setInputVal('');
                 setResult(null);
+                setViewMode('report');
+                setLogs([]);
               }}
               className={`glass p-5 rounded-2xl border text-left flex flex-col justify-between h-[150px] transition-all hover:scale-[1.02] ${
                 isSelected 
@@ -181,12 +202,52 @@ export default function AIAgentsPage() {
 
         {/* Right Output Ledger */}
         <div className="glass p-6 rounded-2xl border border-border min-h-[350px] flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-sm">Intelligence Report</h3>
-            <span className="text-[10px] uppercase font-bold text-secondary tracking-widest">Logs</span>
+          <div className="flex border-b border-border mb-6">
+            <button
+              onClick={() => setViewMode('report')}
+              className={`pb-2 pr-4 font-bold text-xs uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                viewMode === 'report' ? 'text-primary border-primary' : 'text-secondary hover:text-white border-transparent'
+              }`}
+            >
+              Intelligence Report
+            </button>
+            <button
+              onClick={() => {
+                setViewMode('logs');
+                fetchLogs(activeTab);
+              }}
+              className={`pb-2 px-4 font-bold text-xs uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                viewMode === 'logs' ? 'text-primary border-primary' : 'text-secondary hover:text-white border-transparent'
+              }`}
+            >
+              Execution Logs
+            </button>
           </div>
 
-          {result ? (
+          {viewMode === 'logs' ? (
+            <div className="flex-1 overflow-y-auto space-y-3 max-h-[300px] pr-2 custom-scrollbar text-xs">
+              {logsLoading ? (
+                <div className="flex items-center justify-center py-12 text-secondary">
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading execution logs...
+                </div>
+              ) : logs.length > 0 ? (
+                logs.map((log: any) => (
+                  <div key={log.id} className="p-3 bg-slate-950 border border-border rounded-xl space-y-1">
+                    <div className="flex justify-between items-center text-[10px] text-secondary">
+                      <span className="font-semibold text-primary">{log.action}</span>
+                      <span>{log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : ''}</span>
+                    </div>
+                    <p className="text-slate-350">{log.result}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-secondary text-center">
+                  <Clock className="w-8 h-8 mb-2 opacity-40" />
+                  <p>No execution logs found for this agent.</p>
+                </div>
+              )}
+            </div>
+          ) : result ? (
             <div className="flex-1 overflow-y-auto space-y-4 max-h-[300px] pr-2 custom-scrollbar text-xs">
               {activeTab === 4 ? (
                 // RAG Agent response formatting

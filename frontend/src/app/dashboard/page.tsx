@@ -45,6 +45,14 @@ export default function DashboardPage() {
   const [uploadError, setUploadError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
+  useEffect(() => {
+    // Polling project data silently every 5 seconds for real-time shipment & commissioning updates
+    const interval = setInterval(() => {
+      refreshData(true);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [refreshData]);
+
   // Auto-sync search queries
   const filteredProjects = projects.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -188,20 +196,7 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-extrabold tracking-tight text-purple-900">
               {activeProject ? activeProject.name : "Select Project"}
             </h2>
-            {activeProject && (
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                activeProject.status === 'Active' || activeProject.status === 'Completed' 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-red-100 text-red-700'
-              }`}>
-                {activeProject.status}
-              </span>
-            )}
           </div>
-          <p className="text-sm text-purple-650 flex items-center gap-1">
-            <span>Location: {activeProject ? activeProject.location : 'N/A'}</span>
-            {activeProject && <span>· Capacity: {activeProject.capacity_mw} MW</span>}
-          </p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
@@ -463,7 +458,8 @@ export default function DashboardPage() {
                       <th className="py-2.5">Type</th>
                       <th className="py-2.5">Ver</th>
                       <th className="py-2.5">Uploaded By</th>
-                      <th className="py-2.5">Status</th>
+                      <th className="py-2.5">Approval</th>
+                      <th className="py-2.5">Ingestion</th>
                       <th className="py-2.5 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -482,6 +478,15 @@ export default function DashboardPage() {
                               'bg-amber-100 text-amber-700 border-amber-200'
                             }`}>
                               {doc.approved_status}
+                            </span>
+                          </td>
+                          <td className="py-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase ${
+                              doc.status === 'complete' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                              doc.status === 'processing' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                              'bg-gray-100 text-gray-700 border-gray-200'
+                            }`}>
+                              {doc.status || 'pending'}
                             </span>
                           </td>
                           <td className="py-3 text-right space-x-1 whitespace-nowrap">
@@ -576,7 +581,7 @@ export default function DashboardPage() {
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="text-xs sm:text-sm font-bold text-purple-900">{rfi.title}</h4>
-                          <span className="text-[9px] text-purple-500">Asked by: {rfi.asked_by} · {new Date(rfi.created_at).toLocaleDateString()}</span>
+                          <span className="text-[9px] text-purple-500">Asked by: {rfi.asked_by} · {rfi.created_at ? new Date(rfi.created_at).toLocaleDateString() : 'Unknown Date'}</span>
                         </div>
                         <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
                           rfi.status === 'Closed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
@@ -952,7 +957,7 @@ export default function DashboardPage() {
                             {u.is_active ? 'Active' : 'Banned'}
                           </button>
                         </td>
-                        <td className="py-3 text-purple-500">{new Date(u.created_at).toLocaleDateString()}</td>
+                        <td className="py-3 text-purple-500">{u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Unknown Date'}</td>
                         <td className="py-3 text-right">
                           <button
                             onClick={() => {

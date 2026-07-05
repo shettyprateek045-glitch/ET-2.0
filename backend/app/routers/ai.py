@@ -26,7 +26,7 @@ def process_chat(request: ChatRequest, db: Session = Depends(get_db)):
     
     # Save log
     chat_log = ChatLog(
-        session_id=request.session_id,
+        session_id="Project Knowledge & RFI Intelligence Agent",
         query=request.query,
         response=answer,
         sources=",".join(rag_result["sources"])
@@ -53,22 +53,95 @@ def get_chat_history(session_id: str, db: Session = Depends(get_db)):
         for l in logs
     ]
 
+# ---------------- Dynamic Execution Logs ----------------
+
+@router.get("/logs")
+def get_execution_logs(db: Session = Depends(get_db)):
+    """Fetch recent execution logs from the database for all agents."""
+    logs = db.query(ChatLog).order_by(ChatLog.timestamp.desc()).limit(40).all()
+    return [
+        {
+            "id": l.id,
+            "agent": l.session_id,
+            "query": l.query,
+            "response": l.response,
+            "timestamp": l.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        for l in logs
+    ]
+
 @router.get("/agents/spec-compliance")
-def spec_compliance(doc_text: str = ""):
-    return AIService.spec_compliance_agent(doc_text)
+def spec_compliance(doc_text: str = "", db: Session = Depends(get_db)):
+    compliance = AIService.spec_compliance_agent(doc_text)
+    
+    # Save execution log
+    log_text = f"Compliance Check. Results count: {len(compliance)}"
+    chat_log = ChatLog(
+        session_id="Specification & Quality Compliance Agent",
+        query=doc_text[:100] or "Default compliance audit execution",
+        response=log_text,
+        sources="NEC,ASHRAE"
+    )
+    db.add(chat_log)
+    db.commit()
+    return compliance
 
 @router.get("/agents/schedule-risk")
-def schedule_risk():
-    return AIService.schedule_risk_engine()
+def schedule_risk(db: Session = Depends(get_db)):
+    risks = AIService.schedule_risk_engine()
+    
+    # Save execution log
+    chat_log = ChatLog(
+        session_id="Predictive Schedule Risk Engine",
+        query="Generate delay predictions",
+        response=f"Identified {len(risks)} delay risk factors.",
+        sources="ProcurementPO"
+    )
+    db.add(chat_log)
+    db.commit()
+    return risks
 
 @router.get("/agents/supply-chain")
-def supply_chain():
-    return AIService.supply_chain_risk_agent()
+def supply_chain(db: Session = Depends(get_db)):
+    risks = AIService.supply_chain_risk_agent()
+    
+    # Save execution log
+    chat_log = ChatLog(
+        session_id="Supply Chain Visibility & Risk Agent",
+        query="Assess critical supplier ratings",
+        response=f"Analyzed supplier log. Flagged BB- switchgear risks.",
+        sources="SupplierList"
+    )
+    db.add(chat_log)
+    db.commit()
+    return risks
 
 @router.get("/agents/commissioning-copilot")
-def commissioning_copilot():
-    return AIService.commissioning_copilot()
+def commissioning_copilot(db: Session = Depends(get_db)):
+    issues = AIService.commissioning_copilot()
+    
+    # Save execution log
+    chat_log = ChatLog(
+        session_id="Commissioning Quality Assurance Copilot",
+        query="Verify voltage step transients",
+        response="Flagged UPS System A transient sag (12% sag, recovery 180ms).",
+        sources="TIA-942"
+    )
+    db.add(chat_log)
+    db.commit()
+    return issues
 
 @router.get("/agents/project-knowledge-rfi")
-def rfi_agent(query: str = Query(...)):
-    return AIService.project_knowledge_rfi_agent(query)
+def rfi_agent(query: str = Query(...), db: Session = Depends(get_db)):
+    result = AIService.project_knowledge_rfi_agent(query)
+    
+    # Save execution log
+    chat_log = ChatLog(
+        session_id="Project Knowledge & RFI Intelligence Agent",
+        query=query,
+        response=result["answer"],
+        sources=",".join(result["sources"])
+    )
+    db.add(chat_log)
+    db.commit()
+    return result

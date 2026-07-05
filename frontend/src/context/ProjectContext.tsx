@@ -8,12 +8,18 @@ export interface Project {
   name: string;
   location: string;
   capacity_mw: number;
+  capacityMw?: number;
   budget_million: number;
+  budgetMillion?: number;
   budget_used: number;
+  budgetUsed?: number;
   status: 'Active' | 'Delayed' | 'Completed' | 'Planned';
   ai_health_score: number;
+  aiHealthScore?: number;
   start_date: string;
+  startDate?: string;
   end_date: string;
+  endDate?: string;
 }
 
 export interface RFI {
@@ -75,6 +81,7 @@ export interface DocumentMetadata {
   approved_status: 'Pending' | 'Approved' | 'Rejected';
   uploaded_by: string;
   uploaded_at: string;
+  status?: string;
 }
 
 export interface AppNotification {
@@ -99,7 +106,7 @@ interface ProjectContextType {
   kpis: any;
   chartData: any;
   loading: boolean;
-  refreshData: () => Promise<void>;
+  refreshData: (silent?: boolean) => Promise<void>;
   createProject: (proj: Partial<Project>) => Promise<void>;
   editProject: (projId: number, proj: Partial<Project>) => Promise<void>;
   deleteProject: (projId: number) => Promise<void>;
@@ -164,23 +171,26 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setActiveProjectState(proj);
   };
 
-  const refreshData = async () => {
-    setLoading(true);
+  const refreshData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      const projRes = await authFetch('http://127.0.0.1:8000/api/v1/projects/');
-      const kpisRes = await authFetch('http://127.0.0.1:8000/api/v1/projects/dashboard-kpis');
-      const chartsRes = await authFetch('http://127.0.0.1:8000/api/v1/projects/dashboard-charts');
-      const poRes = await authFetch('http://127.0.0.1:8000/api/v1/procurement/');
-      const ncrRes = await authFetch('http://127.0.0.1:8000/api/v1/quality/');
-      const comRes = await authFetch('http://127.0.0.1:8000/api/v1/commissioning/');
-      const docRes = await authFetch('http://127.0.0.1:8000/api/v1/documents/');
+      // Fire all main requests in parallel for faster initial load
+      const [projRes, kpisRes, chartsRes, poRes, ncrRes, comRes, docRes] = await Promise.all([
+        authFetch('http://127.0.0.1:8000/api/v1/projects/'),
+        authFetch('http://127.0.0.1:8000/api/v1/projects/dashboard-kpis'),
+        authFetch('http://127.0.0.1:8000/api/v1/projects/dashboard-charts'),
+        authFetch('http://127.0.0.1:8000/api/v1/procurement/'),
+        authFetch('http://127.0.0.1:8000/api/v1/quality/'),
+        authFetch('http://127.0.0.1:8000/api/v1/commissioning/'),
+        authFetch('http://127.0.0.1:8000/api/v1/documents/')
+      ]);
 
       if (projRes.ok) {
         const projs = await projRes.json();
         setProjects(projs);
         if (projs.length > 0) {
           // Keep active project selected if it still exists
-          const currentActive = activeProject ? projs.find((p: any) => p.id === activeProject.id) : null;
+          const currentActive = activeProject ? projs.find((p: any) => Number(p.id) === Number(activeProject.id)) : null;
           setActiveProjectState(currentActive || projs[0]);
         }
       }
@@ -188,43 +198,37 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       if (chartsRes.ok) setChartData(await chartsRes.json());
       if (poRes.ok) {
         const pos = await poRes.json();
-        setPurchaseOrders(activeProject ? pos.filter((p: any) => p.project_id === activeProject.id) : pos);
+        setPurchaseOrders(activeProject ? pos.filter((p: any) => Number(p.project_id) === Number(activeProject.id)) : pos);
       }
       if (ncrRes.ok) {
         const ncrs = await ncrRes.json();
-        setQualityIssues(activeProject ? ncrs.filter((n: any) => n.project_id === activeProject.id) : ncrs);
+        setQualityIssues(activeProject ? ncrs.filter((n: any) => Number(n.project_id) === Number(activeProject.id)) : ncrs);
       }
       if (comRes.ok) {
         const coms = await comRes.json();
-        setCommissioningItems(activeProject ? coms.filter((c: any) => c.project_id === activeProject.id) : coms);
+        setCommissioningItems(activeProject ? coms.filter((c: any) => Number(c.project_id) === Number(activeProject.id)) : coms);
       }
       if (docRes.ok) {
         const docs = await docRes.json();
-        setDocuments(activeProject ? docs.filter((d: any) => d.project_id === activeProject.id) : docs);
+        setDocuments(activeProject ? docs.filter((d: any) => Number(d.project_id) === Number(activeProject.id)) : docs);
       }
 
-      // Fetch RFIs
+      // Fetch RFIs and notifications concurrently
       if (activeProject) {
-        const rfiRes = await authFetch(`http://127.0.0.1:8000/api/v1/rfis/project/${activeProject.id}`);
-        if (rfiRes.ok) {
-          setRfis(await rfiRes.json());
-        }
-        
-        // Fetch notifications
-        const notifRes = await authFetch(`http://127.0.0.1:8000/api/v1/projects/${activeProject.id}/notifications`);
-        if (notifRes.ok) {
-          setNotifications(await notifRes.json());
-        }
+        const [rfiRes, notifRes] = await Promise.all([
+          authFetch(`http://127.0.0.1:8000/api/v1/rfis/project/${activeProject.id}`),
+          authFetch(`http://127.0.0.1:8000/api/v1/projects/${activeProject.id}/notifications`)
+        ]);
+        if (rfiRes.ok) setRfis(await rfiRes.json());
+        if (notifRes.ok) setNotifications(await notifRes.json());
       }
       
-      // If admin, fetch users
-      if (user?.role === 'Admin') {
-        fetchUsers();
-      }
+      // Admin user fetch
+      if (user?.role === 'Admin') await fetchUsers();
     } catch (e) {
       console.warn("FastAPI backend connection offline. Rendering local fallbacks.");
     }
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   useEffect(() => {

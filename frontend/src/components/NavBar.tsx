@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import NotificationDropdown from './NotificationDropdown';
 import ProjectSwitcher from './ProjectSwitcher';
+import { useProjects } from '../context/ProjectContext';
 import { Menu, X, LogOut, User } from 'lucide-react';
 
 const navItems = [
@@ -21,6 +22,7 @@ export default function NavBar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { activeProject } = useProjects();
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -61,6 +63,8 @@ export default function NavBar() {
 
           <div className="flex items-center space-x-4">
             <ProjectSwitcher />
+            
+
             
             <button
               onClick={() => setNotifOpen(!notifOpen)}
@@ -104,8 +108,10 @@ export default function NavBar() {
         </div>
 
         {/* Mobile Hamburger Toggle Button */}
-        <div className="lg:hidden flex items-center space-x-4">
+        <div className="lg:hidden flex items-center space-x-3">
           <ProjectSwitcher />
+
+
           
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

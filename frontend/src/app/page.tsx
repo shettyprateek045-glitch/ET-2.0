@@ -83,7 +83,8 @@ export default function LandingPage() {
     let height = canvas.height = window.innerHeight;
     
     const particles: any[] = [];
-    for(let i=0; i<60; i++) {
+    const PARTICLE_COUNT = 30; // Reduced from 60 for better performance
+    for(let i=0; i<PARTICLE_COUNT; i++) {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
@@ -94,23 +95,29 @@ export default function LandingPage() {
     }
     
     let animationFrameId: number;
-    const draw = () => {
+    let lastTime = 0;
+    const FPS_LIMIT = 30;
+    const FRAME_INTERVAL = 1000 / FPS_LIMIT;
+    const draw = (timestamp: number) => {
+      if (timestamp - lastTime < FRAME_INTERVAL) {
+        animationFrameId = requestAnimationFrame(draw);
+        return;
+      }
+      lastTime = timestamp;
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = 'rgba(120, 119, 198, 0.2)';
       particles.forEach(p => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fill();
-        
         p.x += p.vx;
         p.y += p.vy;
-        
         if (p.x < 0 || p.x > width) p.vx = -p.vx;
         if (p.y < 0 || p.y > height) p.vy = -p.vy;
       });
       animationFrameId = requestAnimationFrame(draw);
     };
-    draw();
+    requestAnimationFrame(draw);
 
     const handleResize = () => {
       width = canvas.width = window.innerWidth;
@@ -248,8 +255,7 @@ export default function LandingPage() {
                   <div className="p-3 bg-purple-100 text-purple-750 rounded-xl w-fit group-hover:scale-105 transition-transform duration-300">
                     <Icon className="w-6 h-6" />
                   </div>
-                  <h3 className="font-bold text-purple-900 text-md mt-4 group-hover:text-purple-700 transition-colors">{agent.name}</h3>
-                  <p className="text-purple-800 text-xs mt-2.5 leading-relaxed">{agent.shortDesc}</p>
+                  <p className="text-purple-800 text-xs mt-4 leading-relaxed">{agent.shortDesc}</p>
                 </div>
                 
                 <div className="mt-6 pt-4 border-t border-purple-200/20 flex items-center justify-between text-[10px] font-mono text-purple-700 font-bold uppercase tracking-wider">
