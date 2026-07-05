@@ -34,12 +34,12 @@ export default function PlatformPage() {
   ];
 
   return (
-    <div className="space-y-12 p-6 lg:p-12">
+    <div className="space-y-12 p-6 lg:p-12 relative z-10 max-w-7xl mx-auto">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-extrabold tracking-tight text-white">
-          The <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-pink-300">DataCentre AI Platform</span>
+        <h1 className="text-4xl font-extrabold tracking-tight text-purple-950">
+          The <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-700 to-pink-600">DataCentre AI Platform</span>
         </h1>
-        <p className="text-purple-250 max-w-2xl mx-auto">
+        <p className="text-purple-800 max-w-2xl mx-auto font-medium">
           Deploying autonomous agents to streamline design, procurement, and site execution parameters. Click any console below to launch the agent sandbox.
         </p>
       </div>
@@ -49,16 +49,16 @@ export default function PlatformPage() {
           <Link key={i} href={`/ai-agents?tab=${f.tabIndex}`} className="block group">
             <motion.div
               whileHover={{ y: -5 }}
-              className="p-6 rounded-2xl bg-white/5 border border-purple-100/10 hover:border-purple-400/50 backdrop-blur-md transition-all duration-300 cursor-pointer h-full flex flex-col justify-between"
+              className="glass p-6 rounded-2xl border border-purple-200/50 hover:border-purple-500/50 hover:bg-white transition-all duration-300 cursor-pointer h-full flex flex-col justify-between shadow-sm"
             >
               <div>
-                <div className="p-3 bg-purple-500/10 text-purple-300 rounded-xl w-fit mb-4 group-hover:scale-105 transition-transform duration-350">
+                <div className="p-3 bg-purple-100 text-purple-750 rounded-xl w-fit mb-4 group-hover:scale-105 transition-transform duration-350">
                   <f.icon className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2 group-hover:text-purple-300 transition-colors">{f.title}</h3>
-                <p className="text-purple-200/80 text-sm leading-relaxed">{f.desc}</p>
+                <h3 className="text-lg font-bold text-purple-900 mb-2 group-hover:text-purple-700 transition-colors">{f.title}</h3>
+                <p className="text-purple-800 text-sm leading-relaxed">{f.desc}</p>
               </div>
-              <div className="mt-6 text-xs font-mono font-bold text-purple-400 group-hover:text-purple-300 flex items-center justify-between">
+              <div className="mt-6 text-xs font-mono font-bold text-purple-700 group-hover:text-purple-655 flex items-center justify-between uppercase tracking-wider">
                 <span>OPEN SANDBOX CONSOLE</span>
                 <span>→</span>
               </div>

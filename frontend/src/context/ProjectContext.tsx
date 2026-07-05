@@ -167,57 +167,79 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     return fetch(url, { ...options, headers });
   };
 
+  const matchProjectId = (itemProjId: any, activeProjId: any) => {
+    if (!itemProjId || !activeProjId) return false;
+    const itemStr = itemProjId.toString().toLowerCase().replace(/^p/, '');
+    const activeStr = activeProjId.toString().toLowerCase().replace(/^p/, '');
+    return itemStr === activeStr;
+  };
+
   const setActiveProject = (proj: Project) => {
     setActiveProjectState(proj);
+    if (typeof window !== 'undefined' && proj?.id) {
+      localStorage.setItem('epc_active_project_id', proj.id.toString());
+    }
   };
 
   const refreshData = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
+      const savedProjId = typeof window !== 'undefined' ? localStorage.getItem('epc_active_project_id') : null;
+      const projQuery = savedProjId ? `?project_id=${savedProjId}` : '';
+
       // Fire all main requests in parallel for faster initial load
       const [projRes, kpisRes, chartsRes, poRes, ncrRes, comRes, docRes] = await Promise.all([
         authFetch('http://127.0.0.1:8000/api/v1/projects/'),
-        authFetch('http://127.0.0.1:8000/api/v1/projects/dashboard-kpis'),
-        authFetch('http://127.0.0.1:8000/api/v1/projects/dashboard-charts'),
+        authFetch(`http://127.0.0.1:8000/api/v1/projects/dashboard-kpis${projQuery}`),
+        authFetch(`http://127.0.0.1:8000/api/v1/projects/dashboard-charts${projQuery}`),
         authFetch('http://127.0.0.1:8000/api/v1/procurement/'),
         authFetch('http://127.0.0.1:8000/api/v1/quality/'),
         authFetch('http://127.0.0.1:8000/api/v1/commissioning/'),
         authFetch('http://127.0.0.1:8000/api/v1/documents/')
       ]);
 
+      let latestActiveProject = activeProject;
+
       if (projRes.ok) {
         const projs = await projRes.json();
         setProjects(projs);
         if (projs.length > 0) {
-          // Keep active project selected if it still exists
-          const currentActive = activeProject ? projs.find((p: any) => Number(p.id) === Number(activeProject.id)) : null;
-          setActiveProjectState(currentActive || projs[0]);
+          const activeIdToMatch = savedProjId || (activeProject ? activeProject.id : null);
+          const currentActive = activeIdToMatch 
+            ? projs.find((p: any) => matchProjectId(p.id, activeIdToMatch)) 
+            : null;
+          const finalActive = currentActive || projs[0];
+          latestActiveProject = finalActive;
+          setActiveProjectState(finalActive);
+          if (typeof window !== 'undefined' && finalActive?.id) {
+            localStorage.setItem('epc_active_project_id', finalActive.id.toString());
+          }
         }
       }
       if (kpisRes.ok) setKpis(await kpisRes.json());
       if (chartsRes.ok) setChartData(await chartsRes.json());
       if (poRes.ok) {
         const pos = await poRes.json();
-        setPurchaseOrders(activeProject ? pos.filter((p: any) => Number(p.project_id) === Number(activeProject.id)) : pos);
+        setPurchaseOrders(latestActiveProject ? pos.filter((p: any) => matchProjectId(p.project_id, latestActiveProject.id)) : pos);
       }
       if (ncrRes.ok) {
         const ncrs = await ncrRes.json();
-        setQualityIssues(activeProject ? ncrs.filter((n: any) => Number(n.project_id) === Number(activeProject.id)) : ncrs);
+        setQualityIssues(latestActiveProject ? ncrs.filter((n: any) => matchProjectId(n.project_id, latestActiveProject.id)) : ncrs);
       }
       if (comRes.ok) {
         const coms = await comRes.json();
-        setCommissioningItems(activeProject ? coms.filter((c: any) => Number(c.project_id) === Number(activeProject.id)) : coms);
+        setCommissioningItems(latestActiveProject ? coms.filter((c: any) => matchProjectId(c.project_id, latestActiveProject.id)) : coms);
       }
       if (docRes.ok) {
         const docs = await docRes.json();
-        setDocuments(activeProject ? docs.filter((d: any) => Number(d.project_id) === Number(activeProject.id)) : docs);
+        setDocuments(latestActiveProject ? docs.filter((d: any) => matchProjectId(d.project_id, latestActiveProject.id)) : docs);
       }
 
       // Fetch RFIs and notifications concurrently
-      if (activeProject) {
+      if (latestActiveProject) {
         const [rfiRes, notifRes] = await Promise.all([
-          authFetch(`http://127.0.0.1:8000/api/v1/rfis/project/${activeProject.id}`),
-          authFetch(`http://127.0.0.1:8000/api/v1/projects/${activeProject.id}/notifications`)
+          authFetch(`http://127.0.0.1:8000/api/v1/rfis/project/${latestActiveProject.id}`),
+          authFetch(`http://127.0.0.1:8000/api/v1/projects/${latestActiveProject.id}/notifications`)
         ]);
         if (rfiRes.ok) setRfis(await rfiRes.json());
         if (notifRes.ok) setNotifications(await notifRes.json());

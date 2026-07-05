@@ -296,7 +296,7 @@ export default function DashboardPage() {
                 value={activeProjectBudgetStr} 
                 icon={Activity} 
                 colorClass="text-cyan-700 bg-cyan-100" 
-                subtitle="Dublin DC-1 expended status"
+                subtitle={`${activeProject ? activeProject.name : 'Project'} expended status`}
               />
               <KPICard 
                 title="Open RFIs" 
@@ -343,6 +343,45 @@ export default function DashboardPage() {
                         <Bar dataKey="High" name="High Severity" stackId="a" fill="#f43f5e" />
                       </BarChart>
                     </ResponsiveContainer>
+                  </div>
+                </ChartCard>
+
+                <ChartCard title="Project Profile" subtitle="Active project specification & status">
+                  <div className="h-72 flex flex-col justify-between py-2">
+                    <div className="space-y-4">
+                      <div>
+                        <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">Project Name</span>
+                        <span className="text-sm font-bold text-purple-950">{activeProject ? activeProject.name : 'Select a project'}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">Location</span>
+                          <span className="text-sm font-semibold text-purple-900">{activeProject ? activeProject.location : 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">Capacity</span>
+                          <span className="text-sm font-semibold text-purple-900">{activeProject ? `${activeProject.capacity_mw || activeProject.capacityMw} MW` : 'N/A'}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">Status</span>
+                        {activeProject && (
+                          <span className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                            activeProject.status === 'Active' || activeProject.status === 'Completed' 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {activeProject.status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="pt-4 border-t border-purple-100 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-purple-800">AI Health Index</span>
+                      <span className="text-lg font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 to-pink-600">
+                        {activeProject ? activeProject.ai_health_score : 'N/A'}%
+                      </span>
+                    </div>
                   </div>
                 </ChartCard>
               </div>

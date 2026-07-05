@@ -12,7 +12,7 @@ export default function ProjectSwitcher() {
     <select
       value={activeProject?.id || ''}
       onChange={(e) => {
-        const p = projects.find(proj => proj.id === Number(e.target.value));
+        const p = projects.find(proj => String(proj.id) === String(e.target.value));
         if (p) setActiveProject(p);
       }}
       className="bg-slate-900 border border-slate-800 rounded-lg text-xs px-3 py-1.5 text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500"

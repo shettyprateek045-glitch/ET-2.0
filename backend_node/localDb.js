@@ -121,6 +121,17 @@ class LocalCollection {
         if (qVal && typeof qVal === 'object' && qVal.toString) qVal = qVal.toString();
         if (iVal && typeof iVal === 'object' && iVal.toString) iVal = iVal.toString();
 
+        // If query key is projectId / project_id, check both properties on the item
+        if (k === 'projectId' || k === 'project_id') {
+          const itemProjVal = item['projectId'] !== undefined ? item['projectId'] : item['project_id'];
+          if (qVal !== undefined && itemProjVal !== undefined) {
+            const normQ = qVal.toString().toLowerCase().replace(/^p/, '');
+            const normI = itemProjVal.toString().toLowerCase().replace(/^p/, '');
+            if (normI !== normQ) return false;
+            continue;
+          }
+        }
+
         if (iVal != qVal) return false;
       }
       return true;

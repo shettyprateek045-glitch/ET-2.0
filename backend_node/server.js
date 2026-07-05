@@ -358,6 +358,7 @@ app.delete('/api/v1/projects/:id', async (req, res) => {
 });
 
 app.get('/api/v1/projects/dashboard-kpis', async (req, res) => {
+  const { project_id } = req.query;
   try {
     const totalProj = await Project.countDocuments();
     const activeProj = await Project.countDocuments({ status: 'Active' });
@@ -368,9 +369,14 @@ app.get('/api/v1/projects/dashboard-kpis', async (req, res) => {
     const totalBudget = projects.reduce((acc, p) => acc + (p.budgetMillion || p.budget_million || 0), 0);
     const spentBudget = projects.reduce((acc, p) => acc + (p.budgetUsed || p.budget_used || 0), 0);
     
-    const rfiCount = await RFI.countDocuments({ status: 'Open' });
-    const qualityCount = await QualityIssue.countDocuments({ status: 'Open' });
-    const supplierRiskCount = await PurchaseOrder.countDocuments({ supplierRisk: 'High' });
+    const filter = {};
+    if (project_id) {
+      filter.projectId = project_id;
+    }
+
+    const rfiCount = await RFI.countDocuments({ ...filter, status: 'Open' });
+    const qualityCount = await QualityIssue.countDocuments({ ...filter, status: 'Open' });
+    const supplierRiskCount = await PurchaseOrder.countDocuments({ ...filter, supplierRisk: 'High' });
 
     res.json({
       totalProjects: totalProj,
@@ -390,19 +396,39 @@ app.get('/api/v1/projects/dashboard-kpis', async (req, res) => {
 });
 
 app.get('/api/v1/projects/dashboard-charts', async (req, res) => {
+  const { project_id } = req.query;
+  
+  // Vary budget and risk metrics dynamically based on project ID to simulate changes
+  let budgetMultiplier = 1.0;
+  let riskOffset = 0;
+  
+  if (project_id) {
+    const pIdStr = project_id.toString().toLowerCase().replace(/^p/, '');
+    if (pIdStr === '2') {
+      budgetMultiplier = 0.5;
+      riskOffset = 1;
+    } else if (pIdStr === '3') {
+      budgetMultiplier = 0.8;
+      riskOffset = -1;
+    } else if (pIdStr === '4') {
+      budgetMultiplier = 1.5;
+      riskOffset = 2;
+    }
+  }
+
   res.json({
     monthlyTrend: [
-      { name: 'Jan', Budget: 80, Spent: 45 },
-      { name: 'Feb', Budget: 110, Spent: 68 },
-      { name: 'Mar', Budget: 140, Spent: 95 },
-      { name: 'Apr', Budget: 160, Spent: 120 },
-      { name: 'May', Budget: 180, Spent: 135 },
-      { name: 'Jun', Budget: 210, Spent: 160 }
+      { name: 'Jan', Budget: Math.round(80 * budgetMultiplier), Spent: Math.round(45 * budgetMultiplier) },
+      { name: 'Feb', Budget: Math.round(110 * budgetMultiplier), Spent: Math.round(68 * budgetMultiplier) },
+      { name: 'Mar', Budget: Math.round(140 * budgetMultiplier), Spent: Math.round(95 * budgetMultiplier) },
+      { name: 'Apr', Budget: Math.round(160 * budgetMultiplier), Spent: Math.round(120 * budgetMultiplier) },
+      { name: 'May', Budget: Math.round(180 * budgetMultiplier), Spent: Math.round(135 * budgetMultiplier) },
+      { name: 'Jun', Budget: Math.round(210 * budgetMultiplier), Spent: Math.round(160 * budgetMultiplier) }
     ],
     riskHeatmap: [
-      { category: 'Foundation', Low: 2, Medium: 3, High: 1, Critical: 0 },
-      { category: 'Electrical', Low: 1, Medium: 4, High: 2, Critical: 1 },
-      { category: 'HVAC Piping', Low: 4, Medium: 2, High: 0, Critical: 0 }
+      { category: 'Foundation', Low: Math.max(0, 2 - riskOffset), Medium: Math.max(0, 3 + riskOffset), High: Math.max(0, 1 + riskOffset), Critical: 0 },
+      { category: 'Electrical', Low: Math.max(0, 1 + riskOffset), Medium: Math.max(0, 4 - riskOffset), High: Math.max(0, 2 + riskOffset), Critical: 1 },
+      { category: 'HVAC Piping', Low: Math.max(0, 4 - riskOffset), Medium: Math.max(0, 2 + riskOffset), High: 0, Critical: 0 }
     ],
     projectProgress: [
       { id: 1, name: 'Project Dublin DC-1', progress: 75, health: 94.5, status: 'Active' },
